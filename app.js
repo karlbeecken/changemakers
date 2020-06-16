@@ -18,7 +18,10 @@ app.use(cors());
 
 const url = 'mongodb://localhost';
 
-MongoClient.connect(url, (err, db) => {
+MongoClient.connect(url, {
+  useUnifiedTopology: true
+},
+  (err, db) => {
   var dbase = db.db("changemakers");
   if (err) return console.log(err)
 
