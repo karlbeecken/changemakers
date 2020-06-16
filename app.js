@@ -23,7 +23,7 @@ MongoClient.connect(url, (err, db) => {
   if (err) return console.log(err)
 
   app.get('/list', function(req, res, next) {
-    dbase.collection('entries').find().toArray( (err, results) => {
+    dbase.collection("entries").find().toArray( (err, results) => {
         res.json(results)
       });
     });
@@ -33,8 +33,20 @@ MongoClient.connect(url, (err, db) => {
     });
   
     app.post('/add', (req, res) => {
-        console.log(req.body)
+        console.log(req.body.name + " :: " + req.body.email)
+        let entry = {
+          name: req.body.name,
+          email: req.body.email
+        }
+        dbase.collection("entries").save(entry, (err, result) => {
+          if(err) {
+            console.log(err);
+            res.status(500);
+            res.end;
+          }
+        res.json({ entry });
     })
+    });
 
     app.listen(3123, () => {
         console.log('app working on 3123')
