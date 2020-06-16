@@ -4,7 +4,6 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var bodyParser= require('body-parser');
 var cors = require('cors');
-var MongoClient = require('mongodb').MongoClient;
 var nodemailer = require('nodemailer');
 var crypto = require('crypto');
 var mongoose = require('mongoose');
@@ -21,7 +20,30 @@ app.use(cors());
 
 const url = 'mongodb://localhost/changemakers';
 
+const transport = nodemailer.createTransport({
+  host: "klimaschutz.lol",
+  secure: true,
+  auth: {
+    user: "",
+    pass: ""
+  }
+}, {
+  from: 'berlincent@klimaschutz.lol',
+  to: 'berlincent@klimaschutz.lol',
+  subject: 'E-Mail bestätigen',
+  text: 'Bitte bestätigen Sie ihre Mail',
+});
 
+
+transport.verify((error, success) => {
+  if(error) {
+    console.error(error);
+  } else {
+    console.log(success);
+    console.log('Server is ready to take our messages');
+  }
+});
+ 
 mongoose.connect(url, {
   useUnifiedTopology: true,
   useNewUrlParser: true,
@@ -34,6 +56,16 @@ const userSchema = new mongoose.Schema({
   isVerified: { type: Boolean, default: false }
 });
 const User = mongoose.model('User', userSchema);
+const tokenSchema = new mongoose.Schema({
+  _userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'User'},
+  token: {
+    type: String,
+    required: true}
+});
+const Token = mongoose.model('Token', tokenSchema);
 
 dbase.on('error', console.error.bind(console, 'connection error: '));
 dbase.once('open', () => {
@@ -95,8 +127,23 @@ dbase.once('open', () => {
         html += "<a href='/'>zurück zum Start</a>"
         html += "</body></html>";
         res.send(html);
+        const token = new Token({
+          _userId: result._id,
+          token: crypto.randomBytes(16).toString('hex')
+        });
+        token.save((error) => {
+          if (error) {
+            console.error(error);
+            return res.status(500).send({msg: 'Something went wrong'});
+          }
+          transport
+            .sendMail({
+              text: token.token
+            })
+            .then(() => console.log('Sent Verification Mail'));
+        });
       });
-  });
+    });
 
     app.listen(3123, () => {
         console.log('app working on 3123')
