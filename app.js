@@ -6,17 +6,7 @@ var bodyParser= require('body-parser');
 var cors = require('cors');
 var MongoClient = require('mongodb').MongoClient;
 
-var createRouter = require('./routes/create');
-var listRouter = require('./routes/list');
-
 var app = express();
-
-var connectionString = "";
-
-MongoClient.connect(connectionString, (err, client) => {
-    if (err) return console.error(err);
-    console.log('Connected to Database');
-});
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -26,7 +16,27 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
-app.use('/create', createRouter);
-app.use('/list', listRouter);
+const url = 'mongodb://localhost';
 
-module.exports = app;
+MongoClient.connect(url, (err, db) => {
+  var dbase = db.db("changemakers");
+  if (err) return console.log(err)
+
+  app.get('/list', function(req, res, next) {
+    dbase.collection('entries').find().toArray( (err, results) => {
+        res.json(results)
+      });
+    });
+
+    app.get('/add', function(req, res, next) {
+        res.json({ message: 'This is a POST endpoint.' });
+    });
+  
+    app.post('/add', (req, res) => {
+        console.log(req.body)
+    })
+
+    app.listen(3123, () => {
+        console.log('app working on 3123')
+      })
+})
