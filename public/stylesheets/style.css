@@ -1,6 +1,6 @@
 body {
   padding: 20px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  font: 14px "Inter var", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, sans-serif;
 }
 
 a {
@@ -16,6 +16,6 @@ input {
 }
 
 label {
-  width:200px;
+  min-width: 220px;
   display: inline-block;
 }
