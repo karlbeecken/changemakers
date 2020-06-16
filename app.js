@@ -5,6 +5,9 @@ var logger = require('morgan');
 var bodyParser= require('body-parser');
 var cors = require('cors');
 var MongoClient = require('mongodb').MongoClient;
+var nodemailer = require('nodemailer');
+var crypto = require('crypto');
+var mongoose = require('mongoose');
 
 var app = express();
 
@@ -16,17 +19,26 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
-const url = 'mongodb://localhost';
+const url = 'mongodb://localhost/changemakers';
 
-MongoClient.connect(url, {
-  useUnifiedTopology: true
-},
-  (err, db) => {
-  var dbase = db.db("changemakers");
-  if (err) return console.log(err)
 
+mongoose.connect(url, {
+  useUnifiedTopology: true,
+  useNewUrlParser: true,
+});
+
+const dbase = mongoose.connection;
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true },
+  isVerified: { type: Boolean, default: false }
+});
+const User = mongoose.model('User', userSchema);
+
+dbase.on('error', console.error.bind(console, 'connection error: '));
+dbase.once('open', () => {
   app.get('/list', function(req, res, next) {
-    dbase.collection("entries").find().toArray( (err, results) => {
+    dbase.collection("user").find().toArray((err, results) => {
         res.json(results)
       });
     });
@@ -46,30 +58,31 @@ MongoClient.connect(url, {
     app.get('/add', function(req, res, next) {
         res.json({ message: 'This is a POST endpoint.' });
     });
-  
+
     app.post('/add', (req, res) => {
-        console.log(req.body.name + " :: " + req.body.email)
-        let entry = {
-          name: req.body.name,
-          email: req.body.email
+      console.log(req.body.name + " :: " + req.body.email)
+      const user = new User({
+        name: req.body.name,
+        email: req.body.email
+      });
+      user.save((err, result) => {
+        if(err) {
+          console.log(err);
+          res.status(500);
+          res.end();
         }
-        dbase.collection("entries").insertOne(entry, (err, result) => {
-          if(err) {
-            console.log(err);
-            res.status(500);
-            res.end;
-          }
-        res.json({ entry });
-    })
+      res.json({ entry });
+      })
     });
 
     app.post('/add/html', (req, res) => {
       console.log(req.body.name + " :: " + req.body.email)
-      let entry = {
+      const user = new User({
         name: req.body.name,
         email: req.body.email
-      }
-      dbase.collection("entries").insertOne(entry, (err, result) => {
+      });
+
+      user.save((err, result) => {
         if(err) {
           console.log(err);
           res.status(500);
@@ -77,7 +90,7 @@ MongoClient.connect(url, {
         }
         let html = "<html><head><link rel='stylesheet' href='/stylesheets/style.css'></head><body>";
         html += "<h2>Der Name <span style='font-family: monospace;'>"
-        html += entry.name;
+        html += result.name;
         html += "</span> wurde erfolgreich eingetragen.</h2>"
         html += "<a href='/'>zurück zum Start</a>"
         html += "</body></html>";
