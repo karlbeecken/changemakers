@@ -31,7 +31,6 @@ const transport = nodemailer.createTransport({
   from: 'berlincent@klimaschutz.lol',
   to: 'berlincent@klimaschutz.lol',
   subject: 'E-Mail bestätigen',
-  text: 'Bitte bestätigen Sie ihre Mail',
 });
 
 
@@ -47,6 +46,7 @@ transport.verify((error, success) => {
 mongoose.connect(url, {
   useUnifiedTopology: true,
   useNewUrlParser: true,
+  useFindAndModify: false
 });
 
 const dbase = mongoose.connection;
@@ -77,7 +77,9 @@ dbase.once('open', () => {
 
     app.get('/list/html', function(req, res, next) {
       let html = "";
-      dbase.collection("entries").find().toArray( (err, results) => {
+      dbase.collection("users")
+        .find({ isVerified: true })
+        .toArray( (err, results) => {
           html += "<html><head><link rel='stylesheet' href='/stylesheets/style.css'></head><ul>";
           results.forEach( entry => {
             html += "<li>" + entry.name + "</li>";
@@ -136,13 +138,37 @@ dbase.once('open', () => {
             console.error(error);
             return res.status(500).send({msg: 'Something went wrong'});
           }
+          const verifyURL = 
+            `http://localhost:3123/verify?token=${token.token}`;
           transport
             .sendMail({
-              text: token.token
+              text: verifyURL,
+              html: `<a href="${verifyURL}">Hier verifizieren</a>`,
+              to: user.email
             })
             .then(() => console.log('Sent Verification Mail'));
         });
       });
+    });
+
+    app.get('/verify', async (request, response) => {
+      const token = await Token.findOneAndDelete({
+        token: request.query.token
+      });
+      if(token === null) {
+        response.status(404);
+        // Add proper HTML
+        response.send("Invalid Token");
+        return;
+      }
+      console.log(token);
+      const user = await User.findOneAndUpdate(
+        { _id: token._userId },
+        {
+          isVerified: true,
+        });
+      console.log(user);
+      response.redirect('/');
     });
 
     app.listen(3123, () => {
