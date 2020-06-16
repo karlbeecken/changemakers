@@ -3,10 +3,11 @@
 <head>
   <title>Changemakers</title>
   <link rel="stylesheet" href="/stylesheets/style.css">
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 
 <body>
-  <form action="https://api.change-makers.de/add/html" method="post" class="form">
+  <form action="//api.change-makers.de/add/html" method="post" class="form">
     <div class="form">
       <label for="name">Enter your name: </label>
       <input type="text" name="name" id="name" required>
@@ -16,10 +17,11 @@
       <input type="email" name="email" id="email" required>
     </div>
     <div class="form">
+      <div class="g-recaptcha" data-sitekey="6LeynaUZAAAAAKVz1oCnV4WwmE95JQ_lNtObu0eK"></div>
       <input type="submit" value="Subscribe!">
     </div>
   </form>
-  <iframe src="https://api.change-makers.de/list/html" frameborder="0" ></iframe>
+  <iframe src="//api.change-makers.de/list/html" frameborder="0" ></iframe>
 </body>
 
 </html>

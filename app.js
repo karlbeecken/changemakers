@@ -5,6 +5,9 @@ var logger = require('morgan');
 var bodyParser= require('body-parser');
 var cors = require('cors');
 var MongoClient = require('mongodb').MongoClient;
+var reCAPTCHA = require('recaptcha2');
+
+require('dotenv').config()
 
 var app = express();
 
@@ -16,11 +19,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
+var recaptcha = new reCAPTCHA({
+  siteKey: process.env.CAPTCHA_SITEKEY,
+  secretKey: process.env.CAPTCHA_SECRET
+});
+
 const url = 'mongodb://localhost';
 
-MongoClient.connect(url, {
-  useUnifiedTopology: true
-},
+MongoClient.connect(url, { useUnifiedTopology: true },
   (err, db) => {
   var dbase = db.db("changemakers");
   if (err) return console.log(err)
@@ -49,6 +55,32 @@ MongoClient.connect(url, {
   
     app.post('/add', (req, res) => {
         console.log(req.body.name + " :: " + req.body.email)
+        let key = req.body['g-recaptcha-response']
+        recaptcha.validate(key)
+        .then(function() {
+          let entry = {
+            name: req.body.name,
+            email: req.body.email
+          }
+          dbase.collection("entries").insertOne(entry, (err, result) => {
+            if(err) {
+              console.log(err);
+              res.status(500);
+              res.end;
+            }
+          res.json({ entry });
+        })
+        .catch(function(errorCodes) {
+          console.log(recaptcha.translateErrors(errorCodes));
+        });
+      });
+    });
+
+    app.post('/add/html', (req, res) => {
+      console.log(req.body.name + " :: " + req.body.email)
+      let key = req.body['g-recaptcha-response']
+      recaptcha.validate(key)
+      .then(function(){
         let entry = {
           name: req.body.name,
           email: req.body.email
@@ -59,29 +91,17 @@ MongoClient.connect(url, {
             res.status(500);
             res.end;
           }
-        res.json({ entry });
-    })
-    });
-
-    app.post('/add/html', (req, res) => {
-      console.log(req.body.name + " :: " + req.body.email)
-      let entry = {
-        name: req.body.name,
-        email: req.body.email
-      }
-      dbase.collection("entries").insertOne(entry, (err, result) => {
-        if(err) {
-          console.log(err);
-          res.status(500);
-          res.end;
-        }
-        let html = "<html><head><link rel='stylesheet' href='/stylesheets/style.css'></head><body>";
-        html += "<h2>Der Name <span style='font-family: monospace;'>"
-        html += entry.name;
-        html += "</span> wurde erfolgreich eingetragen.</h2>"
-        html += "<a href='/'>zurück zum Start</a>"
-        html += "</body></html>";
-        res.send(html);
+          let html = "<html><head><link rel='stylesheet' href='/stylesheets/style.css'></head><body>";
+          html += "<h2>Der Name <span style='font-family: monospace;'>"
+          html += entry.name;
+          html += "</span> wurde erfolgreich eingetragen.</h2>"
+          html += "<a href='/'>zurück zum Start</a>"
+          html += "</body></html>";
+          res.send(html);
+        });
+      })
+      .catch(function(errorCodes) {
+        console.log(recaptcha.translateErrors(errorCodes));
       });
   });
 
