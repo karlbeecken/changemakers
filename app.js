@@ -53,7 +53,7 @@ MongoClient.connect(url, {
           name: req.body.name,
           email: req.body.email
         }
-        dbase.collection("entries").save(entry, (err, result) => {
+        dbase.collection("entries").insertOne(entry, (err, result) => {
           if(err) {
             console.log(err);
             res.status(500);
@@ -69,7 +69,7 @@ MongoClient.connect(url, {
         name: req.body.name,
         email: req.body.email
       }
-      dbase.collection("entries").save(entry, (err, result) => {
+      dbase.collection("entries").insertOne(entry, (err, result) => {
         if(err) {
           console.log(err);
           res.status(500);
