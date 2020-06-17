@@ -85,116 +85,116 @@ dbase.once('open', () => {
   });
   app.get('/list', function(req, res, next) {
     dbase.collection("user").find().toArray((err, results) => {
-        res.json(results)
-      });
+      res.json(results)
     });
+  });
 
-    app.get('/list/html', function(req, res, next) {
-      let html = "";
-      dbase.collection("users")
-        .find({ isVerified: true })
-        .toArray( (err, results) => {
-          html += "<html><head><link rel='stylesheet' href='/stylesheets/style.css'></head><ul>";
-          results.forEach( entry => {
-            html += "<li>" + entry.name + "</li>";
-          });
-          html += "</ul></html>";
-          res.send(html);
+  app.get('/list/html', function(req, res, next) {
+    let html = "";
+    dbase.collection("users")
+      .find({ isVerified: true })
+      .toArray( (err, results) => {
+        html += "<html><head><link rel='stylesheet' href='/stylesheets/style.css'></head><ul>";
+        results.forEach( entry => {
+          html += "<li>" + entry.name + "</li>";
         });
+        html += "</ul></html>";
+        res.send(html);
       });
+  });
 
-    app.get('/add', function(req, res, next) {
-        res.json({ message: 'This is a POST endpoint.' });
-    });
+  app.get('/add', function(req, res, next) {
+      res.json({ message: 'This is a POST endpoint.' });
+  });
 
-    app.post('/add', (req, res) => {
-      console.log(req.body.name + " :: " + req.body.email)
-      let key = req.body['g-recaptcha-response'];
-      recaptcha.validate(key)
-        .then(function() {
-          const user = new User({
-            name: req.body.name,
-            email: req.body.email
-          });
-          user.save((err, result) => {
-            if(err) {
-              console.log(err);
-              res.status(500);
-              res.end();
-            }
-          });
-          res.json({ entry });
-        })
-        .catch(function(errorCodes) {
-          console.error(recaptcha.translateErrors(errorCodes));
+  app.post('/add', (req, res) => {
+    console.log(req.body.name + " :: " + req.body.email)
+    let key = req.body['g-recaptcha-response'];
+    recaptcha.validate(key)
+      .then(function() {
+        const user = new User({
+          name: req.body.name,
+          email: req.body.email
         });
-    });
+        user.save((err, result) => {
+          if(err) {
+            console.log(err);
+            res.status(500);
+            res.end();
+          }
+        });
+        res.json({ entry });
+      })
+      .catch(function(errorCodes) {
+        console.error(recaptcha.translateErrors(errorCodes));
+      });
+  });
 
-    app.post('/add/html', async (req, res) => {
-      console.log(req.body.name + " :: " + req.body.email)
-      let key = req.body['g-recaptcha-response']
-      recaptcha.validate(key)
-        .then(function() {
-          const user = new User({
-            name: req.body.name,
-            email: req.body.email
+  app.post('/add/html', async (req, res) => {
+    console.log(req.body.name + " :: " + req.body.email);
+    let key = req.body['g-recaptcha-response'];
+    recaptcha.validate(key)
+      .then(function() {
+        const user = new User({
+          name: req.body.name,
+          email: req.body.email
+        });
+
+        user.save((err, result) => {
+          if(err) {
+            console.log(err);
+            res.status(500);
+            res.end;
+          }
+          res.render('verificationNeeded');
+
+          const token = new Token({
+            _userId: result._id,
+            token: crypto.randomBytes(16).toString('hex')
           });
-
-          user.save((err, result) => {
-            if(err) {
-              console.log(err);
-              res.status(500);
-              res.end;
+          token.save((error) => {
+            if (error) {
+              console.error(error);
+              return res.status(500).send({msg: 'Something went wrong'});
             }
-            res.render('verificationNeeded');
-
-            const token = new Token({
-              _userId: result._id,
-              token: crypto.randomBytes(16).toString('hex')
-            });
-            token.save((error) => {
-              if (error) {
-                console.error(error);
-                return res.status(500).send({msg: 'Something went wrong'});
-              }
-              const verifyURL = 
-                `http://localhost:3123/verify?token=${token.token}`;
-              transport
-                .sendMail({
-                  text: verifyURL,
-                  html: `<a href="${verifyURL}">Hier verifizieren</a>`,
-                  to: user.email
-                })
-                .then(() => console.log('Sent Verification Mail'));
-            })
+            const verifyURL = 
+              `http://localhost:3123/verify?token=${token.token}`;
+            transport
+              .sendMail({
+                text: verifyURL,
+                html: `<a href="${verifyURL}">Hier verifizieren</a>`,
+                to: user.email
+              })
+              .then(() => console.log('Sent Verification Mail'));
           })
         })
-        .catch(function(errorCodes) {
-          console.log(recaptcha.translateErrors(errorCodes));
-        });
-    });
-
-    app.get('/verify', async (request, response) => {
-      const token = await Token.findOneAndDelete({
-        token: request.query.token
-      });
-      if(token === null) {
-        response.status(404);
-        // Add proper HTML
-        response.send("Invalid Token");
-        return;
-      }
-      console.log(token);
-      const user = await User.findOneAndUpdate(
-        { _id: token._userId },
-        {
-          isVerified: true,
-        });
-      console.log(user);
-      response.redirect('/');
-    });
-
-    app.listen(3123, () => {
-        console.log('app working on 3123')
       })
+      .catch(function(errorCodes) {
+        console.log(recaptcha.translateErrors(errorCodes));
+      });
+    });
+
+  app.get('/verify', async (request, response) => {
+    const token = await Token.findOneAndDelete({
+      token: request.query.token
+    });
+    if(token === null) {
+      response.status(404);
+      // Add proper HTML
+      response.send("Invalid Token");
+      return;
+    }
+    console.log(token);
+    const user = await User.findOneAndUpdate(
+      { _id: token._userId },
+      {
+        isVerified: true,
+      });
+    console.log(user);
+    response.redirect('/');
+  });
+
+  app.listen(3123, () => {
+      console.log('app working on 3123')
+  });
 })
