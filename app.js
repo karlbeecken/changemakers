@@ -180,7 +180,8 @@ dbase.once('open', () => {
         isVerified: true,
       });
     console.log(user);
-    response.redirect('/');
+    let redirectUrl = process.env.REDIRECT_URL || '/';
+    response.redirect(redirectUrl);
   });
 
   app.listen(3123, () => {
