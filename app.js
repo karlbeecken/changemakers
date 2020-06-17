@@ -148,8 +148,7 @@ dbase.once('open', () => {
               console.error(error);
               return res.status(500).send({msg: 'Something went wrong'});
             }
-            const verifyUrl = 
-              `http://localhost:3123/verify?token=${token.token}`;
+            const verifyUrl = `${process.env.PAGE_URL}/verify?token=${token.token}`;
             transport
               .sendMail({
                 text: verifyUrl,
