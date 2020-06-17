@@ -146,13 +146,8 @@ dbase.once('open', () => {
               res.status(500);
               res.end;
             }
-            let html = "<html><head><link rel='stylesheet' href='/stylesheets/style.css'></head><body>";
-            html += "<h2>Der Name <span style='font-family: monospace;'>"
-            html += result.name;
-            html += "</span> wurde erfolgreich eingetragen.</h2>"
-            html += "<a href='/'>zurück zum Start</a>"
-            html += "</body></html>";
-            res.send(html);
+            res.render('verificationNeeded');
+
             const token = new Token({
               _userId: result._id,
               token: crypto.randomBytes(16).toString('hex')
