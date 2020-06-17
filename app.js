@@ -37,6 +37,8 @@ const transport = nodemailer.createTransport({
 transport.verify((error, success) => {
   if(error) {
     console.error(error);
+    console.error('Exiting');
+    process.exit(1);
   } else {
     console.log(success);
     console.log('Server is ready to take our messages');
