@@ -8,6 +8,7 @@ var cors = require('cors');
 var nodemailer = require('nodemailer');
 var crypto = require('crypto');
 var mongoose = require('mongoose');
+var reCAPTCHA = require('recaptcha2');
 
 var app = express();
 
@@ -18,8 +19,6 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
-
-const url = 'mongodb://localhost/changemakers';
 
 const transport = nodemailer.createTransport({
   host: "klimaschutz.lol",
@@ -33,7 +32,10 @@ const transport = nodemailer.createTransport({
   to: 'berlincent@klimaschutz.lol',
   subject: 'E-Mail bestätigen',
 });
-
+var recaptcha = new reCAPTCHA({
+  siteKey: process.env.CAPTCHA_SITEKEY,
+  secretKey: process.env.CAPTCHA_SECRET
+});
 
 transport.verify((error, success) => {
   if(error) {
@@ -46,6 +48,7 @@ transport.verify((error, success) => {
   }
 });
  
+const url = 'mongodb://localhost/changemakers';
 mongoose.connect(url, {
   useUnifiedTopology: true,
   useNewUrlParser: true,
@@ -98,60 +101,74 @@ dbase.once('open', () => {
 
     app.post('/add', (req, res) => {
       console.log(req.body.name + " :: " + req.body.email)
-      const user = new User({
-        name: req.body.name,
-        email: req.body.email
-      });
-      user.save((err, result) => {
-        if(err) {
-          console.log(err);
-          res.status(500);
-          res.end();
-        }
-      res.json({ entry });
-      })
+      let key = req.body['g-recaptcha-response'];
+      recaptcha.validate(key)
+        .then(function() {
+          const user = new User({
+            name: req.body.name,
+            email: req.body.email
+          });
+          user.save((err, result) => {
+            if(err) {
+              console.log(err);
+              res.status(500);
+              res.end();
+            }
+          });
+          res.json({ entry });
+        })
+        .catch(function(errorCodes) {
+          console.error(recaptcha.translateErrors(errorCodes));
+        });
     });
 
-    app.post('/add/html', (req, res) => {
+    app.post('/add/html', async (req, res) => {
       console.log(req.body.name + " :: " + req.body.email)
-      const user = new User({
-        name: req.body.name,
-        email: req.body.email
-      });
+      let key = req.body['g-recaptcha-response']
+      recaptcha.validate(key)
+        .then(function() {
+          const user = new User({
+            name: req.body.name,
+            email: req.body.email
+          });
 
-      user.save((err, result) => {
-        if(err) {
-          console.log(err);
-          res.status(500);
-          res.end;
-        }
-        let html = "<html><head><link rel='stylesheet' href='/stylesheets/style.css'></head><body>";
-        html += "<h2>Der Name <span style='font-family: monospace;'>"
-        html += result.name;
-        html += "</span> wurde erfolgreich eingetragen.</h2>"
-        html += "<a href='/'>zurück zum Start</a>"
-        html += "</body></html>";
-        res.send(html);
-        const token = new Token({
-          _userId: result._id,
-          token: crypto.randomBytes(16).toString('hex')
-        });
-        token.save((error) => {
-          if (error) {
-            console.error(error);
-            return res.status(500).send({msg: 'Something went wrong'});
-          }
-          const verifyURL = 
-            `http://localhost:3123/verify?token=${token.token}`;
-          transport
-            .sendMail({
-              text: verifyURL,
-              html: `<a href="${verifyURL}">Hier verifizieren</a>`,
-              to: user.email
+          user.save((err, result) => {
+            if(err) {
+              console.log(err);
+              res.status(500);
+              res.end;
+            }
+            let html = "<html><head><link rel='stylesheet' href='/stylesheets/style.css'></head><body>";
+            html += "<h2>Der Name <span style='font-family: monospace;'>"
+            html += result.name;
+            html += "</span> wurde erfolgreich eingetragen.</h2>"
+            html += "<a href='/'>zurück zum Start</a>"
+            html += "</body></html>";
+            res.send(html);
+            const token = new Token({
+              _userId: result._id,
+              token: crypto.randomBytes(16).toString('hex')
+            });
+            token.save((error) => {
+              if (error) {
+                console.error(error);
+                return res.status(500).send({msg: 'Something went wrong'});
+              }
+              const verifyURL = 
+                `http://localhost:3123/verify?token=${token.token}`;
+              transport
+                .sendMail({
+                  text: verifyURL,
+                  html: `<a href="${verifyURL}">Hier verifizieren</a>`,
+                  to: user.email
+                })
+                .then(() => console.log('Sent Verification Mail'));
             })
-            .then(() => console.log('Sent Verification Mail'));
+          })
+        })
+        .catch(function(errorCodes) {
+          console.log(recaptcha.translateErrors(errorCodes));
         });
-      });
     });
 
     app.get('/verify', async (request, response) => {

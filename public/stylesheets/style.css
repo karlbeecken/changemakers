@@ -1,6 +1,6 @@
 body {
   padding: 20px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  font: 14px "Inter var", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, sans-serif;
 }
 
 a {
@@ -9,4 +9,13 @@ a {
 
 input {
   margin-bottom: 10px;
+}
+
+.g-recaptcha {
+  margin-bottom: 10px;
+}
+
+label {
+  min-width: 220px;
+  display: inline-block;
 }
