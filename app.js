@@ -9,6 +9,7 @@ var nodemailer = require('nodemailer');
 var crypto = require('crypto');
 var mongoose = require('mongoose');
 var reCAPTCHA = require('recaptcha2');
+var ejs = require('ejs');
 
 var app = express();
 
@@ -19,6 +20,8 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
+app.set('views', './views');
+app.set('view engine', 'ejs');
 
 const transport = nodemailer.createTransport({
   host: "klimaschutz.lol",
@@ -75,6 +78,11 @@ const Token = mongoose.model('Token', tokenSchema);
 
 dbase.on('error', console.error.bind(console, 'connection error: '));
 dbase.once('open', () => {
+  app.get('/', (req, res, next) => {
+    res.render('index', {
+      captchaSitekey: process.env.CAPTCHA_SITEKEY,
+    });
+  });
   app.get('/list', function(req, res, next) {
     dbase.collection("user").find().toArray((err, results) => {
         res.json(results)
