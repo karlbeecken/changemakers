@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      Diese Leute haben schon unterschrieben
+    </title>
+    <link rel='stylesheet' href='/stylesheets/style.css'>
+  </head>
+  <body>
+    <ul>
+      <% for(const user of users) { %>
+        <li>
+          <%= user.name %>
+        </li>
+      <% } %>
+    </ul>
+  </body>
+</html>

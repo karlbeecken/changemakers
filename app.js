@@ -89,18 +89,9 @@ dbase.once('open', () => {
     });
   });
 
-  app.get('/list/html', function(req, res, next) {
-    let html = "";
-    dbase.collection("users")
-      .find({ isVerified: true })
-      .toArray( (err, results) => {
-        html += "<html><head><link rel='stylesheet' href='/stylesheets/style.css'></head><ul>";
-        results.forEach( entry => {
-          html += "<li>" + entry.name + "</li>";
-        });
-        html += "</ul></html>";
-        res.send(html);
-      });
+  app.get('/list/html', async function(req, res, next) {
+    const users = await User.find({ isVerified: true });
+    res.render('list', { users });
   });
 
   app.get('/add', function(req, res, next) {
