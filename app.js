@@ -171,8 +171,7 @@ dbase.once('open', () => {
     });
     if(token === null) {
       response.status(404);
-      // Add proper HTML
-      response.send("Invalid Token");
+      response.render('invalidToken');
       return;
     }
     console.log(token);
