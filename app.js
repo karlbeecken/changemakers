@@ -152,17 +152,17 @@ dbase.once('open', () => {
             _userId: result._id,
             token: crypto.randomBytes(16).toString('hex')
           });
-          token.save((error) => {
+          token.save(async (error) => {
             if (error) {
               console.error(error);
               return res.status(500).send({msg: 'Something went wrong'});
             }
-            const verifyURL = 
+            const verifyUrl = 
               `http://localhost:3123/verify?token=${token.token}`;
             transport
               .sendMail({
-                text: verifyURL,
-                html: `<a href="${verifyURL}">Hier verifizieren</a>`,
+                text: verifyUrl,
+                html: await ejs.renderFile('views/verificationMail.ejs', { verifyUrl }),
                 to: user.email
               })
               .then(() => console.log('Sent Verification Mail'));
