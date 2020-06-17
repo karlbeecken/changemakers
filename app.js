@@ -1,3 +1,4 @@
+require('dotenv').config()
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
@@ -24,11 +25,11 @@ const transport = nodemailer.createTransport({
   host: "klimaschutz.lol",
   secure: true,
   auth: {
-    user: "",
-    pass: ""
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASSWORD
   }
 }, {
-  from: 'berlincent@klimaschutz.lol',
+  from: 'noreply@change-makers.de',
   to: 'berlincent@klimaschutz.lol',
   subject: 'E-Mail bestätigen',
 });
