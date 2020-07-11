@@ -7,12 +7,10 @@
     <link rel='stylesheet' href='/stylesheets/style.css'>
   </head>
   <body>
-    <ul>
+    <p>
       <% for(const user of users) { %>
-        <li>
-          <%= user.name %>
-        </li>
+          <%= user.name %> | 
       <% } %>
-    </ul>
+      </p>
   </body>
 </html>
